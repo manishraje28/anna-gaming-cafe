@@ -17,6 +17,11 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+
+
 class ChatViewModel : ViewModel() {
     var messages by mutableStateOf<List<ChatMessage>>(emptyList()); private set
     var room by mutableStateOf<ChatRoom?>(null); private set
@@ -50,12 +55,11 @@ class ChatViewModel : ViewModel() {
                 channel = ChatRepository.subscribeToMessages(roomId)
                 val flow = channel!!.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
                     table = "chat_messages"
-                    filter = "room_id=eq.$roomId"
                 }
                 flow.onEach { action ->
                     try {
-                        val msg = action.decodeRecord<ChatMessage>()
-                        if (messages.none { it.id == msg.id }) {
+                        val msg = Json.decodeFromJsonElement<ChatMessage>(action.record)
+                        if (msg.roomId == roomId && messages.none { it.id == msg.id }) {
                             messages = messages + msg
                             ChatRepository.markMessagesAsRead(roomId, currentUserId)
                         }
@@ -65,6 +69,7 @@ class ChatViewModel : ViewModel() {
             } catch (_: Exception) { }
         }
     }
+
 
     fun updateInput(text: String) { inputText = text }
 

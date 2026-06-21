@@ -109,7 +109,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
                             phone = state.phone,
                             onOtpChange = viewModel::updateOtp,
                             onVerify = { viewModel.verifyOtp(); focusManager.clearFocus() },
-                            onBack = { viewModel.uiState = viewModel.uiState.copy(isOtpSent = false, otp = "") },
+                            onBack = { viewModel.resetOtpState() },
                             isLoading = state.isLoading
                         )
                         "name" -> NameInputStep(

@@ -143,6 +143,10 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun resetOtpState() {
+        uiState = uiState.copy(isOtpSent = false, otp = "")
+    }
+
     fun signOut() {
         viewModelScope.launch {
             try {
@@ -152,3 +156,4 @@ class AuthViewModel : ViewModel() {
         }
     }
 }
+

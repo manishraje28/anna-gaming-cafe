@@ -70,8 +70,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
 
     // Supabase
-    val supabaseVersion = "3.6.0"
+    val supabaseVersion = "3.1.1"
     implementation(platform("io.github.jan-tennert.supabase:bom:$supabaseVersion"))
+
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
@@ -95,3 +96,26 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
+
+configurations.all {
+    resolutionStrategy {
+        force("androidx.browser:browser:1.8.0")
+        force("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+        force("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
+        force("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
+        force("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2")
+        force("androidx.lifecycle:lifecycle-livedata-core:2.8.2")
+        force("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.2")
+        force("androidx.lifecycle:lifecycle-common:2.8.2")
+        force("androidx.lifecycle:lifecycle-process:2.8.2")
+        force("androidx.compose.ui:ui:1.7.0")
+        force("androidx.compose.ui:ui-graphics:1.7.0")
+        force("androidx.compose.ui:ui-tooling-preview:1.7.0")
+        force("androidx.compose.ui:ui-text:1.7.0")
+        force("androidx.compose.ui:ui-geometry:1.7.0")
+        force("androidx.compose.ui:ui-unit:1.7.0")
+        force("androidx.compose.runtime:runtime:1.7.0")
+        force("androidx.compose.runtime:runtime-saveable:1.7.0")
+    }
+}
+

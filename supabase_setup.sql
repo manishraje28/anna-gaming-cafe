@@ -165,6 +165,17 @@ CREATE INDEX IF NOT EXISTS idx_stations_status ON stations(status);
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
 
+-- Security helper function to check owner role without RLS recursion
+CREATE OR REPLACE FUNCTION public.is_owner(user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = user_id AND role = 'OWNER'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Enable RLS on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE stations ENABLE ROW LEVEL SECURITY;
@@ -182,42 +193,34 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Owners can view all profiles" ON profiles FOR SELECT
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners can view all profiles" ON profiles FOR SELECT USING (public.is_owner(auth.uid()));
 
 -- STATIONS policies (everyone reads, only owners write)
 CREATE POLICY "Anyone can view stations" ON stations FOR SELECT USING (TRUE);
-CREATE POLICY "Owners can manage stations" ON stations FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners can manage stations" ON stations FOR ALL USING (public.is_owner(auth.uid()));
 
 -- GAMES policies (everyone reads)
 CREATE POLICY "Anyone can view games" ON games FOR SELECT USING (TRUE);
-CREATE POLICY "Owners can manage games" ON games FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners can manage games" ON games FOR ALL USING (public.is_owner(auth.uid()));
 
 -- PACKAGES policies (everyone reads)
 CREATE POLICY "Anyone can view packages" ON packages FOR SELECT USING (TRUE);
-CREATE POLICY "Owners can manage packages" ON packages FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners can manage packages" ON packages FOR ALL USING (public.is_owner(auth.uid()));
 
 -- PROMOTIONS policies (everyone reads)
 CREATE POLICY "Anyone can view active promotions" ON promotions FOR SELECT USING (TRUE);
-CREATE POLICY "Owners can manage promotions" ON promotions FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners can manage promotions" ON promotions FOR ALL USING (public.is_owner(auth.uid()));
 
 -- BOOKINGS policies
 CREATE POLICY "Customers see own bookings" ON bookings FOR SELECT USING (customer_id = auth.uid());
 CREATE POLICY "Customers can create bookings" ON bookings FOR INSERT WITH CHECK (customer_id = auth.uid());
-CREATE POLICY "Owners see all bookings" ON bookings FOR SELECT
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
-CREATE POLICY "Owners can update bookings" ON bookings FOR UPDATE
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners see all bookings" ON bookings FOR SELECT USING (public.is_owner(auth.uid()));
+CREATE POLICY "Owners can update bookings" ON bookings FOR UPDATE USING (public.is_owner(auth.uid()));
 
 -- TRANSACTIONS policies
 CREATE POLICY "Users see own transactions" ON transactions FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Users can create transactions" ON transactions FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Owners see all transactions" ON transactions FOR SELECT
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners see all transactions" ON transactions FOR SELECT USING (public.is_owner(auth.uid()));
 
 -- REVIEWS policies
 CREATE POLICY "Anyone can view reviews" ON reviews FOR SELECT USING (TRUE);
@@ -225,24 +228,23 @@ CREATE POLICY "Customers can create reviews" ON reviews FOR INSERT WITH CHECK (c
 
 -- MEMBERSHIPS policies
 CREATE POLICY "Users see own memberships" ON memberships FOR SELECT USING (user_id = auth.uid());
-CREATE POLICY "Owners see all memberships" ON memberships FOR SELECT
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners see all memberships" ON memberships FOR SELECT USING (public.is_owner(auth.uid()));
 
 -- CHAT ROOMS policies
 CREATE POLICY "Users see own chat rooms" ON chat_rooms FOR SELECT
-    USING (customer_id = auth.uid() OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+    USING (customer_id = auth.uid() OR public.is_owner(auth.uid()));
 CREATE POLICY "Users can create chat rooms" ON chat_rooms FOR INSERT WITH CHECK (customer_id = auth.uid());
-CREATE POLICY "Owners can update chat rooms" ON chat_rooms FOR UPDATE
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER'));
+CREATE POLICY "Owners can update chat rooms" ON chat_rooms FOR UPDATE USING (public.is_owner(auth.uid()));
 
 -- CHAT MESSAGES policies
 CREATE POLICY "Users see messages in their rooms" ON chat_messages FOR SELECT
     USING (
         EXISTS (SELECT 1 FROM chat_rooms WHERE chat_rooms.id = chat_messages.room_id AND chat_rooms.customer_id = auth.uid())
-        OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'OWNER')
+        OR public.is_owner(auth.uid())
     );
 CREATE POLICY "Users can send messages" ON chat_messages FOR INSERT
     WITH CHECK (sender_id = auth.uid());
+
 
 -- ============================================================
 -- AUTO-CREATE PROFILE on signup (trigger)
