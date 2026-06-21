@@ -1,0 +1,8 @@
+{
+  "name": "anna-gaming-cafe-android",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'Build handled by Gradle'"
+  }
+}

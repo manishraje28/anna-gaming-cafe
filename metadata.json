@@ -1,0 +1,6 @@
+{
+  "name": "Anna Gaming Cafe",
+  "description": "A high-fidelity booking, gaming catalogs, live owner chat, and analytics dashboard system designed as a premium custom mobile companion application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
